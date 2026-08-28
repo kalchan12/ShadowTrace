@@ -1,0 +1,63 @@
+# Built-in OS / Editor files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment & Secrets (NEVER COMMIT CREDENTIALS)
+.env
+.env.local
+.env.*.local
+*.env
+*.keystore
+*.jks
+*.p12
+*.pem
+*.key
+google-services.json
+GoogleService-Info.plist
+local.properties
+secrets.json
+
+# Flutter / Dart
+client/.dart_tool/
+client/.flutter-plugins
+client/.flutter-plugins-dependencies
+client/.packages
+client/build/
+client/.pub-cache/
+client/.pub/
+client/coverage/
+
+# Android / Kotlin (Client Android & Service)
+*.iml
+.gradle/
+build/
+*/build/
+*/*/build/
+service/.gradle/
+service/build/
+service/app/build/
+service/local.properties
+captures/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Gradle cache
+.gradle/
+service/.gradle/
+
+# Supabase
+backend/supabase/.branches/
+backend/supabase/.temp/
+backend/.env
+
+# Temporary / Scratch
+tmp/
+temp/
+scratch/
+*.log

@@ -1,0 +1,21 @@
+# Supabase Configuration for ShadowTrace Local Development
+project_id = "shadowtrace"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[realtime]
+enabled = true
+ip_version = "v4"
+
+[auth]
+enabled = false # ShadowTrace uses Keystore device identity, not traditional auth

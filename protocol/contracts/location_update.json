@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LocationUpdate",
+  "type": "object",
+  "required": [
+    "device_id",
+    "group_id",
+    "latitude",
+    "longitude",
+    "accuracy_m",
+    "timestamp"
+  ],
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "group_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "latitude": {
+      "type": "number",
+      "minimum": -90.0,
+      "maximum": 90.0
+    },
+    "longitude": {
+      "type": "number",
+      "minimum": -180.0,
+      "maximum": 180.0
+    },
+    "accuracy_m": {
+      "type": "number",
+      "minimum": 0.0
+    },
+    "altitude_m": {
+      "type": ["number", "null"]
+    },
+    "speed_mps": {
+      "type": ["number", "null"],
+      "minimum": 0.0
+    },
+    "bearing_deg": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "maximum": 360.0
+    },
+    "battery_pct": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "is_charging": {
+      "type": ["boolean", "null"]
+    },
+    "timestamp": {
+      "type": "integer"
+    }
+  },
+  "additionalProperties": false
+}

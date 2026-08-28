@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Device",
+  "type": "object",
+  "required": ["device_id", "public_key", "created_at", "last_seen"],
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Deterministic SHA-256 fingerprint of the Keystore public key (hex encoded)"
+    },
+    "public_key": {
+      "type": "string",
+      "description": "Base64-encoded DER X.509 EC public key"
+    },
+    "created_at": {
+      "type": "integer",
+      "description": "Unix epoch timestamp in milliseconds"
+    },
+    "last_seen": {
+      "type": "integer",
+      "description": "Unix epoch timestamp in milliseconds"
+    }
+  },
+  "additionalProperties": false
+}

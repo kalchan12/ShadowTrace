@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Group",
+  "type": "object",
+  "required": ["group_id", "created_by_device_id", "created_at"],
+  "properties": {
+    "group_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Cryptographically random UUID v4"
+    },
+    "created_by_device_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Device ID of the group creator"
+    },
+    "created_at": {
+      "type": "integer",
+      "description": "Unix epoch timestamp in milliseconds"
+    }
+  },
+  "additionalProperties": false
+}

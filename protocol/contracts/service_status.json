@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ServiceStatus",
+  "type": "object",
+  "required": [
+    "is_running",
+    "is_broadcasting",
+    "active_group_id",
+    "last_update_timestamp",
+    "battery_optimization_ignored",
+    "location_permission_status"
+  ],
+  "properties": {
+    "is_running": {
+      "type": "boolean"
+    },
+    "is_broadcasting": {
+      "type": "boolean"
+    },
+    "active_group_id": {
+      "type": ["string", "null"]
+    },
+    "last_update_timestamp": {
+      "type": ["integer", "null"]
+    },
+    "battery_optimization_ignored": {
+      "type": "boolean"
+    },
+    "location_permission_status": {
+      "type": "string",
+      "enum": ["granted_fine", "granted_coarse", "denied", "unknown"]
+    }
+  },
+  "additionalProperties": false
+}
