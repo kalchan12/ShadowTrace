@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/tactical_theme.dart';
-import 'features/splash/splash_screen.dart';
+import 'features/splash/welcome_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +17,7 @@ class ShadowTraceApp extends StatelessWidget {
       title: 'ShadowTrace',
       debugShowCheckedModeBanner: false,
       theme: TacticalTheme.darkTheme,
-      home: const SplashScreen(),
+      home: const WelcomeScreen(),
     );
   }
 }
