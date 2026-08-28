@@ -1,8 +1,8 @@
 # ShadowTrace
 
-> **Private, high-integrity realtime location sharing for trusted groups.**
+> **Private, zero-cloud realtime location sharing for trusted groups.**
 
-ShadowTrace is a decentralized, privacy-first location sharing system designed specifically for trusted friend circles. Unlike conventional consumer location applications, ShadowTrace is built from the ground up without accounts, email addresses, phone numbers, advertising identifiers, or cloud user profiles.
+ShadowTrace is a 100% decentralized, privacy-first location sharing system designed specifically for trusted friend circles. ShadowTrace operates with **zero central cloud backend, zero accounts, zero cloud databases, and zero tracking servers**. All data resides strictly on the participating local devices.
 
 ---
 
@@ -16,6 +16,7 @@ ShadowTrace decouples user interaction from background location telemetry by sep
 │  - Modern Flutter UI (Cyberpunk / Tactical Theme)      │
 │  - Live Map (MapLibre), Friend List & Nicknames        │
 │  - Group & Pairing Management (QR Invite Scanner)      │
+│  - Local Database (SQLite / Local Persistence)         │
 │  - Service Control & Settings                          │
 └───────────────────────────┬────────────────────────────┘
                             │
@@ -25,64 +26,47 @@ ShadowTrace decouples user interaction from background location telemetry by sep
 │               ShadowTrace Service (APK 2)              │
 │  - Native Kotlin Android Application                   │
 │  - Persistent Android Foreground Service + Sticky Notif│
-│  - Fused Location Provider (GPS/Cell/Wi-Fi)            │
+│  - Fused Location Provider (GPS/Sensors)               │
 │  - Hardware-Backed Device Identity (Android Keystore)  │
-│  - Battery-Aware Publishing to Supabase Realtime       │
+│  - Local DataStore & Direct Peer Telemetry Dispatch    │
 └───────────────────────────┬────────────────────────────┘
                             │
-                            │ Direct Location Ingest
+                            │ Direct Peer-to-Peer / Local Network
                             ▼
-┌────────────────────────────────────────────────────────┐
-│                  Supabase PostgreSQL                   │
-│  - Row-Level Security (RLS) policies                   │
-│  - Realtime WebSocket Channel Dispatch                 │
-│  - Ephemeral "Current Location" Model (No History)     │
-└───────────────────────────┬────────────────────────────┘
-                            │
-                            │ Realtime Subscriptions
-                            ▼
-                  [Other Group Clients]
+                  [Peer Group Devices]
 ```
 
-### Why Two Separate Applications?
-1. **Uncompromising Background Reliability:** Flutter runtimes are optimized for rendering UI, not for zero-crash, low-overhead 24/7 background location services. A dedicated Native Kotlin foreground service guarantees Android OS lifecycle compliance, battery optimization, and crash isolation.
-2. **Explicit User Control & Transparency:** The background service runs as an explicit, user-authorized foreground service with a visible persistent notification. The user always knows when telemetry is active.
-3. **Clean Security Boundaries:** The Service owns hardware-backed cryptographic keys (in Android Keystore) and raw location updates. The Client owns UI state, group visualization, and presentation nicknames.
+### Key Architectural Tenets:
+1. **Zero Cloud Backend:** There is no remote SaaS database, no Supabase server, no Firebase, and no central host. Data is stored solely on local device storage.
+2. **Two Separate Applications:**
+   - The **Client** owns the user experience, tactical map visualization, group keys, and local nicknames.
+   - The **Service** owns Android background execution, hardware Keystore cryptographic keys, and raw GPS telemetry harvesting.
+3. **Hardware Device Identity:** Identification is anchored directly to hardware-backed keys in the Android Keystore. No emails, phone numbers, or passwords.
+4. **Local Ephemeral Telemetry:** Only current coordinates are kept in local storage. No movement history logs are generated.
 
 ---
 
-## 2. No-Account Identity Model
-
-Conventional location platforms require phone numbers, Google accounts, or central user databases that can be breached, tracked, or aggregated. ShadowTrace replaces this with:
-
-* **Hardware Device Identity:** Each installation generates a cryptographic keypair stored in the device's hardware-backed Android Keystore.
-* **Ephemeral Group Tokens:** Groups are created ad-hoc with high-entropy cryptographic invite tokens.
-* **Zero Registration:** Pairing occurs via peer-to-peer QR code scanning or secure invite strings.
-* **Client-Side Presentation:** Human-readable names ("Alice", "Bob") are local nicknames stored solely on the client device—the backend only knows public keys and group memberships.
-
----
-
-## 3. Technology Stack
+## 2. Technology Stack
 
 | Layer | Technologies |
 |---|---|
-| **Client** | Flutter 3.x, Dart 3.x, Riverpod (State Management), MapLibre GL, Material 3 with Tactical Theme |
-| **Service** | Kotlin 1.9+, Android SDK 34, Android Foreground Service, Google Play Services Fused Location, Android Keystore, Jetpack DataStore |
+| **Client** | Flutter 3.x, Dart 3.x, Riverpod (State Management), MapLibre GL, Local SQLite Storage, Material 3 Tactical Theme |
+| **Service** | Kotlin 1.9+, Android SDK 34, Android Foreground Service, Google Play Services Fused Location, Android Keystore, Jetpack DataStore / Room |
 | **IPC** | Android AIDL (Android Interface Definition Language) / Bound Services |
-| **Backend** | Supabase PostgreSQL, Supabase Realtime (WebSockets), Row-Level Security (RLS) |
+| **Backend / DB** | **NONE (100% Local Device Database & Direct Peer Exchanges)** |
 | **Tooling** | Gradle, Flutter CLI, Bash development scripts |
 
 ---
 
-## 4. Repository Structure
+## 3. Repository Structure
 
 ```
 shadowtrace/
 ├── client/                 # Flutter UI Application
 │   ├── lib/
-│   │   ├── core/           # Constants, Theme, Routing, Utils
+│   │   ├── core/           # Constants, Theme, Routing, Utils, Providers
 │   │   ├── models/         # Device, Friend, Group, Location models
-│   │   ├── data/           # Repository interfaces & Mock data
+│   │   ├── data/           # Repository interfaces, Local DB & Mock data
 │   │   ├── features/       # Onboarding, Map, Friends, Group, Sharing, Settings
 │   │   ├── services/       # ServiceBridge IPC client
 │   │   └── widgets/        # Tactical UI components & markers
@@ -95,13 +79,10 @@ shadowtrace/
 │   │       ├── identity/   # Keystore device identity manager
 │   │       ├── location/   # FusedLocation engine & policies
 │   │       ├── ipc/        # AIDL Service implementation
-│   │       ├── network/    # Supabase publisher
-│   │       ├── storage/    # DataStore settings
+│   │       ├── network/    # Direct Peer Dispatcher
+│   │       ├── storage/    # Local DataStore & Room DB
 │   │       └── service/    # Foreground service lifecycle
 │   └── build.gradle.kts
-│
-├── backend/                # Supabase configuration & migrations
-│   └── supabase/migrations/# SQL schema with RLS policies
 │
 ├── protocol/               # Data contracts & IPC JSON schemas
 ├── docs/                   # Exhaustive architecture & security docs
@@ -118,47 +99,11 @@ shadowtrace/
 
 ---
 
-## 5. Current Development Status
+## 4. Current Development Status
 
-> **Current Phase:** Phase 0 (Repository Foundation) & Phase 1 Scaffolding
+> **Current Phase:** Phase 0 (Repository Foundation) & Phase 1 (Client UI Foundation)
 
-- [x] Repository architecture and documentation foundation established.
-- [x] Client Flutter application scaffolded with tactical dark theme, Riverpod state, mock repositories, and all core feature screens.
-- [x] Service Native Kotlin application scaffolded with AIDL IPC interface, Foreground Service lifecycle structure, Fused Location wrapper, and Keystore identity manager.
-- [x] Backend database schema and Row-Level Security (RLS) migration defined.
-- [ ] Realtime Supabase live connection (Planned in Phase 4/6).
-- [ ] End-to-end device QR pairing (Planned in Phase 5).
-- [ ] Production cryptographic signature verification (Planned in Phase 7).
-
----
-
-## 6. Quick Start & Development Setup
-
-### Prerequisites
-- Flutter SDK (>= 3.19.0)
-- Android SDK (API 34) & JDK 17+
-- Android device or emulator with Google Play Services (for Fused Location)
-
-### Building the Client
-```bash
-cd client
-flutter pub get
-flutter test
-flutter run
-```
-
-### Building the Service
-```bash
-cd service
-./gradlew test
-./gradlew assembleDebug
-```
-
----
-
-## 7. Security & Privacy Philosophy
-- **Current Location Only:** The default data schema retains only the latest known location packet for each device in an active group. Historical traces are not logged to disk on the backend.
-- **Explicit Foreground Visibility:** The service never tracks stealthily. An ongoing notification informs the user of active broadcast status.
-- **Fail-Closed Security:** Unauthenticated or unauthorized group tokens cannot subscribe to realtime location streams.
-
-See [security.md](security.md) and [architecture.md](architecture.md) for full specifications.
+- [x] 100% Local-First Architecture established (No cloud backend).
+- [x] Client Flutter application built with tactical dark theme, Riverpod state, local repository abstractions, and core tactical screens.
+- [x] Service Native Kotlin application scaffolded with AIDL IPC interface, Foreground Service lifecycle, Fused Location wrapper, and Keystore identity manager.
+- [x] Repository validation suite passing with zero warnings and all unit/widget tests verified.
