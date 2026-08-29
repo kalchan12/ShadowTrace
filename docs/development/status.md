@@ -6,7 +6,7 @@ This document is maintained as the single source of truth for the current develo
 
 ## Current State
 
-* **Current Phase:** **Phase 5 — Device Pairing & Direct Key Exchange (COMPLETED)** ➔ **Phase 6 — Direct Realtime Location Telemetry**
+* **Current Phase:** **Phase 6 — Direct Realtime Location Telemetry (COMPLETED)** ➔ **Phase 7 — Security Hardening & Signing**
 * **Architecture Model:** **100% Local-First / Zero-Cloud (Local SQLite & Jetpack DataStore)**
 * **Design System:** **Neon Protocol (Cyberpunk Tactical HUD)**
 * **Last Updated:** August 2026
@@ -23,8 +23,8 @@ This document is maintained as the single source of truth for the current develo
 | **Phase 3** | Client ↔ Service IPC Bridge | **COMPLETED** |
 | **Phase 4** | Local Database Foundation (SQLite / DataStore) | **COMPLETED** |
 | **Phase 5** | Device Pairing & Direct Key Exchange | **COMPLETED** |
-| **Phase 6** | Direct Realtime Location Telemetry | **NEXT** |
-| **Phase 7** | Security Hardening & Signing | Planned |
+| **Phase 6** | Direct Realtime Location Telemetry | **COMPLETED** |
+| **Phase 7** | Security Hardening & Signing | **NEXT** |
 | **Phase 8** | Battery & Reliability | Planned |
 | **Phase 9** | UI Polish & Tactical Styling | Completed (Initial UI) |
 | **Phase 10**| Release Preparation | Planned |
@@ -57,16 +57,22 @@ This document is maintained as the single source of truth for the current develo
   - Created tactical HUD [`TacticalQrWidget`](file:///home/kal/ShadowTrace/client/lib/widgets/tactical_qr_widget.dart) using `qr_flutter` with cyber corner brackets and clipboard integration.
   - Built camera [`QrScannerScreen`](file:///home/kal/ShadowTrace/client/lib/features/pairing/qr_scanner_screen.dart) with `mobile_scanner`, tactical laser scanning animation, torch control, and manual input fallback.
   - Integrated dynamic QR generation and scanning across [`CreateGroupDialog`](file:///home/kal/ShadowTrace/client/lib/features/group/create_group_dialog.dart), [`CreateGroupScreen`](file:///home/kal/ShadowTrace/client/lib/features/group/create_group_screen.dart), [`JoinGroupDialog`](file:///home/kal/ShadowTrace/client/lib/features/group/join_group_dialog.dart), and [`JoinGroupScreen`](file:///home/kal/ShadowTrace/client/lib/features/group/join_group_screen.dart).
+- [x] **Direct Realtime Location Telemetry (Phase 6):**
+  - Implemented Kotlin [`DirectPeerDispatcher.kt`](file:///home/kal/ShadowTrace/service/app/src/main/kotlin/com/shadowtrace/service/network/DirectPeerDispatcher.kt) for local subnet UDP telemetry broadcast (Port 48550).
+  - Implemented Kotlin [`DirectPeerReceiver.kt`](file:///home/kal/ShadowTrace/service/app/src/main/kotlin/com/shadowtrace/service/network/DirectPeerReceiver.kt) background UDP datagram receiver.
+  - Wired telemetry dispatching and receiver lifecycle directly into [`ForegroundLocationService.kt`](file:///home/kal/ShadowTrace/service/app/src/main/kotlin/com/shadowtrace/service/service/ForegroundLocationService.kt).
+  - Implemented Dart [`P2pTelemetryService`](file:///home/kal/ShadowTrace/client/lib/services/p2p_telemetry_service.dart) for local network socket listening, datagram ingestion, and broadcast dispatch.
+  - Connected live telemetry ingest pipeline to [`SqliteLocationRepository`](file:///home/kal/ShadowTrace/client/lib/data/repositories/sqlite_location_repository.dart) and Riverpod providers in [`providers.dart`](file:///home/kal/ShadowTrace/client/lib/core/providers.dart).
 - [x] **Validation & Tests:**
   - `flutter analyze` passing with **0 issues**.
-  - `flutter test` passing all **26 tests** (SQLite, Models, Pairing Payloads, IPC Bridge, UI Widgets).
+  - `flutter test` passing all **29 tests** (SQLite, Models, Pairing Payloads, P2P Telemetry, IPC Bridge, UI Widgets).
   - `./gradlew test` passing on native Android Kotlin service (**50/50 tasks successful**).
 
 ---
 
 ## Next Recommended Steps
 
-1. **Advance Phase 6 (Direct Realtime Location Telemetry):**
-   - Implement P2P socket / local WiFi telemetry dispatcher (`DirectPeerDispatcher.kt`).
-   - Wire live incoming location packets to SQLite `cached_peer_locations` and Riverpod streams.
+1. **Advance Phase 7 (Security Hardening & Cryptographic Signing):**
+   - Enforce Keystore EC NIST P-256 digital signature generation on outgoing location packets (`sig`).
+   - Validate peer cryptographic signatures against local public keys in `local_peers` before accepting and caching coordinates.
 
