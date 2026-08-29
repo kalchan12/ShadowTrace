@@ -1,4 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/local/app_database.dart';
+import '../data/repositories/sqlite_location_repository.dart';
+import '../data/repositories/sqlite_friend_repository.dart';
+import '../data/repositories/sqlite_group_repository.dart';
 import '../data/repositories/location_repository.dart';
 import '../data/repositories/friend_repository.dart';
 import '../data/repositories/group_repository.dart';
@@ -11,21 +15,53 @@ import '../models/friend.dart';
 import '../models/location_update.dart';
 import '../models/service_status.dart';
 
-// Repository Providers
-final locationRepositoryProvider = Provider<LocationRepository>((ref) {
-  return MockLocationRepository();
-});
-
-final friendRepositoryProvider = Provider<FriendRepository>((ref) {
-  return MockFriendRepository();
-});
-
-final groupRepositoryProvider = Provider<GroupRepository>((ref) {
-  return MockGroupRepository();
+// Database & Service Providers
+final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
+  return AppDatabase.open();
 });
 
 final serviceBridgeProvider = Provider<ServiceBridge>((ref) {
   return ServiceBridge();
+});
+
+// Repository Providers
+final locationRepositoryProvider = Provider<LocationRepository>((ref) {
+  final dbAsync = ref.watch(appDatabaseProvider);
+  final bridge = ref.watch(serviceBridgeProvider);
+  return dbAsync.when(
+    data: (db) => SqliteLocationRepository(db, bridge),
+    loading: () => MockLocationRepository(),
+    error: (_, _) => MockLocationRepository(),
+  );
+});
+
+final friendRepositoryProvider = Provider<FriendRepository>((ref) {
+  final dbAsync = ref.watch(appDatabaseProvider);
+  return dbAsync.when(
+    data: (db) => SqliteFriendRepository(db),
+    loading: () => MockFriendRepository(),
+    error: (_, _) => MockFriendRepository(),
+  );
+});
+
+final groupRepositoryProvider = Provider<GroupRepository>((ref) {
+  final dbAsync = ref.watch(appDatabaseProvider);
+  return dbAsync.when(
+    data: (db) => SqliteGroupRepository(db),
+    loading: () => MockGroupRepository(),
+    error: (_, _) => MockGroupRepository(),
+  );
+});
+
+// IPC Future Providers
+final deviceIdProvider = FutureProvider<String?>((ref) async {
+  final bridge = ref.watch(serviceBridgeProvider);
+  return bridge.getDeviceId();
+});
+
+final lastKnownLocationProvider = FutureProvider<LocationUpdate?>((ref) async {
+  final bridge = ref.watch(serviceBridgeProvider);
+  return bridge.getLastKnownLocation();
 });
 
 // State Providers
@@ -59,7 +95,7 @@ class ServiceStatusNotifier extends StateNotifier<ServiceStatus> {
   Future<void> toggleBroadcast(String groupId) async {
     if (state.isBroadcasting) {
       await _bridge.stopBroadcasting();
-      state = state.copyWith(isBroadcasting: false, activeGroupId: null);
+      state = state.copyWith(isBroadcasting: false, clearActiveGroupId: true);
     } else {
       await _bridge.startBroadcasting(groupId);
       state = state.copyWith(
