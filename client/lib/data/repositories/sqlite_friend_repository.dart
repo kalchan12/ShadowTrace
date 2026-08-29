@@ -39,6 +39,7 @@ class SqliteFriendRepository implements FriendRepository {
   }
 
   /// Register or update a paired peer in SQLite
+  @override
   Future<void> registerPeer({
     required String deviceId,
     required String groupId,

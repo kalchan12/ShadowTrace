@@ -88,6 +88,17 @@ class MockFriendRepository implements FriendRepository {
     return _localNicknames[deviceId] ??
         'CALLSIGN-${deviceId.take(4).toUpperCase()}';
   }
+
+  @override
+  Future<void> registerPeer({
+    required String deviceId,
+    required String groupId,
+    required String nickname,
+    required String publicKey,
+    int? joinedAt,
+  }) async {
+    _localNicknames[deviceId] = nickname;
+  }
 }
 
 extension StringExtension on String {

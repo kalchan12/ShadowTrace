@@ -9,4 +9,13 @@ abstract class FriendRepository {
 
   /// Get locally stored nickname or fallback to callsign.
   Future<String> getNickname(String deviceId);
+
+  /// Register or update a paired peer in local storage.
+  Future<void> registerPeer({
+    required String deviceId,
+    required String groupId,
+    required String nickname,
+    required String publicKey,
+    int? joinedAt,
+  });
 }
