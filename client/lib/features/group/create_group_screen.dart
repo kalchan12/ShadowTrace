@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/tactical_colors.dart';
+import '../../core/providers.dart';
+import '../../models/group.dart';
+import '../../widgets/tactical_qr_widget.dart';
 
-class CreateGroupScreen extends StatefulWidget {
+class CreateGroupScreen extends ConsumerStatefulWidget {
   const CreateGroupScreen({super.key});
 
   @override
-  State<CreateGroupScreen> createState() => _CreateGroupScreenState();
+  ConsumerState<CreateGroupScreen> createState() => _CreateGroupScreenState();
 }
 
-class _CreateGroupScreenState extends State<CreateGroupScreen> {
+class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
   final TextEditingController _nameController = TextEditingController(
     text: 'NIGHT OPS',
   );
   bool _isCreated = false;
-  final String _inviteCode = '7F3K-92XA';
+  bool _isLoading = false;
+  Group? _createdGroup;
+  String _inviteUri = '';
 
   @override
   void dispose() {
@@ -163,11 +169,25 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isCreated = true;
-                    });
-                  },
+                  onPressed: _isLoading
+                      ? null
+                      : () async {
+                          setState(() => _isLoading = true);
+                          try {
+                            final group = await ref
+                                .read(groupRepositoryProvider)
+                                .createGroup();
+                            ref.read(activeGroupProvider.notifier).state = group;
+                            setState(() {
+                              _createdGroup = group;
+                              _inviteUri =
+                                  'shadowtrace://v1/join?gid=${group.id}&sec=${group.inviteSecret ?? ""}';
+                              _isCreated = true;
+                            });
+                          } finally {
+                            if (mounted) setState(() => _isLoading = false);
+                          }
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: TacticalColors.primaryContainer,
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -177,9 +197,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                     elevation: 4,
                     shadowColor: TacticalColors.primaryContainer,
                   ),
-                  child: const Text(
-                    'CREATE',
-                    style: TextStyle(
+                  child: Text(
+                    _isLoading ? 'CREATING...' : 'CREATE',
+                    style: const TextStyle(
                       fontFamily: 'monospace',
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
@@ -197,6 +217,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   }
 
   Widget _buildCreatedView() {
+    final gid = _createdGroup?.id ?? 'UNKNOWN';
+
     return Container(
       constraints: const BoxConstraints(maxWidth: 400),
       decoration: BoxDecoration(
@@ -250,7 +272,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'Share this QR code with your friends.',
+            'Share this QR code with your trusted peers.',
             style: TextStyle(
               fontSize: 13,
               color: TacticalColors.onSurfaceVariant,
@@ -258,22 +280,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Simulated QR Code Frame
-          Container(
-            width: 180,
-            height: 180,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: TacticalColors.primaryContainer,
-                width: 2,
-              ),
-            ),
-            padding: const EdgeInsets.all(8),
-            child: const Center(
-              child: Icon(Icons.qr_code_2, size: 150, color: Colors.black),
-            ),
+          // Dynamic QR Code
+          TacticalQrWidget(
+            data: _inviteUri,
+            size: 160,
+            showCopyButton: false,
           ),
           const SizedBox(height: 16),
 
@@ -282,7 +293,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'INVITE CODE',
+                'GROUP IDENTIFIER',
                 style: TextStyle(
                   fontFamily: 'monospace',
                   fontSize: 10,
@@ -294,7 +305,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
               const SizedBox(height: 6),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
+                  horizontal: 14,
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
@@ -307,14 +318,16 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      _inviteCode,
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: TacticalColors.primaryContainer,
-                        letterSpacing: 3.0,
+                    Expanded(
+                      child: Text(
+                        'ID: ${gid.length > 16 ? "${gid.substring(0, 16)}..." : gid}',
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: TacticalColors.primaryContainer,
+                          letterSpacing: 1.0,
+                        ),
                       ),
                     ),
                     IconButton(
@@ -324,9 +337,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         color: TacticalColors.onSurfaceVariant,
                       ),
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: _inviteCode));
+                        Clipboard.setData(ClipboardData(text: _inviteUri));
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Invite code copied!')),
+                          const SnackBar(content: Text('Invite URI copied!')),
                         );
                       },
                     ),

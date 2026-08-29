@@ -1,27 +1,105 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/tactical_colors.dart';
+import '../../core/providers.dart';
+import '../../models/pairing_payload.dart';
+import '../pairing/qr_scanner_screen.dart';
 import '../shell/main_shell_screen.dart';
 
-class JoinGroupScreen extends StatefulWidget {
+class JoinGroupScreen extends ConsumerStatefulWidget {
   const JoinGroupScreen({super.key});
 
   @override
-  State<JoinGroupScreen> createState() => _JoinGroupScreenState();
+  ConsumerState<JoinGroupScreen> createState() => _JoinGroupScreenState();
 }
 
-class _JoinGroupScreenState extends State<JoinGroupScreen> {
-  final TextEditingController _codeController = TextEditingController(
-    text: '7F3K-92XA',
-  );
+class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
+  final TextEditingController _codeController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController(
-    text: 'Alex',
+    text: 'OPERATOR-1',
   );
+  bool _isLoading = false;
+  String? _statusMessage;
 
   @override
   void dispose() {
     _codeController.dispose();
     _usernameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleScannedPayload(PairingPayload payload) async {
+    if (payload is GroupInvitePayload) {
+      _codeController.text = payload.toUri();
+      setState(() => _isLoading = true);
+      try {
+        final joined = await ref
+            .read(groupRepositoryProvider)
+            .joinGroup(payload.groupId, payload.inviteSecret);
+        ref.read(activeGroupProvider.notifier).state = joined;
+        setState(() {
+          _statusMessage = 'Successfully joined group: ${payload.groupId.substring(0, 8)}...';
+        });
+      } catch (e) {
+        setState(() => _statusMessage = 'Error joining group: $e');
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    } else if (payload is PeerPairingPayload) {
+      final activeGroup = ref.read(activeGroupProvider);
+      final gid = payload.groupId ?? activeGroup?.id;
+      if (gid == null) {
+        setState(() => _statusMessage = 'Create or join a group before pairing peer identity');
+        return;
+      }
+      setState(() => _isLoading = true);
+      try {
+        await ref.read(friendRepositoryProvider).registerPeer(
+              deviceId: payload.deviceId,
+              groupId: gid,
+              nickname: payload.alias ?? 'PEER-${payload.deviceId.substring(0, 4).toUpperCase()}',
+              publicKey: payload.publicKey,
+            );
+        setState(() {
+          _statusMessage = 'Paired peer: ${payload.alias ?? payload.deviceId.substring(0, 8)}';
+        });
+      } catch (e) {
+        setState(() => _statusMessage = 'Error pairing peer: $e');
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _join() async {
+    final raw = _codeController.text.trim();
+    if (raw.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+      _statusMessage = null;
+    });
+
+    try {
+      final payload = PairingPayload.parse(raw);
+      await _handleScannedPayload(payload);
+    } catch (_) {
+      try {
+        final joined = await ref
+            .read(groupRepositoryProvider)
+            .joinGroup(raw, 'sec_token');
+        ref.read(activeGroupProvider.notifier).state = joined;
+        setState(() {
+          _statusMessage = 'Joined group: ${joined.id.substring(0, 8)}...';
+        });
+      } catch (e) {
+        setState(() {
+          _statusMessage = 'Failed to join: $e';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -116,16 +194,18 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
                               children: [
                                 Expanded(
                                   child: OutlinedButton.icon(
-                                    onPressed: () {
-                                      ScaffoldMessenger.of(
+                                    onPressed: () async {
+                                      final payload = await Navigator.push<PairingPayload?>(
                                         context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'QR Scanner ready for Phase 5',
+                                        MaterialPageRoute(
+                                          builder: (_) => const QrScannerScreen(
+                                            title: 'SCAN GROUP / PEER QR',
                                           ),
                                         ),
                                       );
+                                      if (payload != null && mounted) {
+                                        await _handleScannedPayload(payload);
+                                      }
                                     },
                                     icon: const Icon(
                                       Icons.qr_code_scanner,
@@ -181,9 +261,10 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                       decoration: const InputDecoration(
-                                        hintText: 'CODE',
+                                        hintText: 'URI / CODE',
                                         hintStyle: TextStyle(
                                           color: TacticalColors.outlineVariant,
+                                          fontSize: 11,
                                         ),
                                         border: InputBorder.none,
                                       ),
@@ -192,18 +273,37 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
                                 ),
                               ],
                             ),
+                            if (_statusMessage != null) ...[
+                              const SizedBox(height: 10),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: TacticalColors.surfaceElevated,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: TacticalColors.primaryContainer),
+                                ),
+                                child: Text(
+                                  _statusMessage!,
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 11,
+                                    color: TacticalColors.primaryContainer,
+                                  ),
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 12),
 
                             OutlinedButton.icon(
-                              onPressed: () {},
+                              onPressed: _isLoading ? null : _join,
                               icon: const Icon(
                                 Icons.login,
                                 size: 18,
                                 color: TacticalColors.onSurface,
                               ),
-                              label: const Text(
-                                'JOIN GROUP',
-                                style: TextStyle(
+                              label: Text(
+                                _isLoading ? 'CONNECTING...' : 'JOIN GROUP',
+                                style: const TextStyle(
                                   fontFamily: 'monospace',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,

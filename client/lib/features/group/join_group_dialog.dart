@@ -4,6 +4,9 @@ import '../../core/constants/tactical_colors.dart';
 import '../../core/providers.dart';
 import '../../widgets/tactical_button.dart';
 
+import '../../models/pairing_payload.dart';
+import '../pairing/qr_scanner_screen.dart';
+
 class JoinGroupDialog extends ConsumerStatefulWidget {
   const JoinGroupDialog({super.key});
 
@@ -14,6 +17,7 @@ class JoinGroupDialog extends ConsumerStatefulWidget {
 class _JoinGroupDialogState extends ConsumerState<JoinGroupDialog> {
   final TextEditingController _tokenController = TextEditingController();
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -21,17 +25,97 @@ class _JoinGroupDialogState extends ConsumerState<JoinGroupDialog> {
     super.dispose();
   }
 
-  Future<void> _join() async {
-    final token = _tokenController.text.trim();
-    if (token.isEmpty) return;
+  Future<void> _handleScannedPayload(PairingPayload payload) async {
+    if (payload is GroupInvitePayload) {
+      _tokenController.text = payload.toUri();
+      await _joinWithPayload(payload);
+    } else if (payload is PeerPairingPayload) {
+      final activeGroup = ref.read(activeGroupProvider);
+      final targetGid = payload.groupId ?? activeGroup?.id;
+      if (targetGid == null) {
+        setState(() {
+          _errorMessage = 'No active group selected for peer pairing';
+        });
+        return;
+      }
+      setState(() => _isLoading = true);
+      try {
+        await ref.read(friendRepositoryProvider).registerPeer(
+              deviceId: payload.deviceId,
+              groupId: targetGid,
+              nickname: payload.alias ?? 'PEER-${payload.deviceId.substring(0, 4).toUpperCase()}',
+              publicKey: payload.publicKey,
+            );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: TacticalColors.primaryContainer,
+              content: Text(
+                'Peer ${payload.alias ?? payload.deviceId.substring(0, 6)} paired successfully!',
+                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
 
-    setState(() => _isLoading = true);
+  Future<void> _joinWithPayload(GroupInvitePayload payload) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     try {
       final joined = await ref
           .read(groupRepositoryProvider)
-          .joinGroup(token, 'sec_token');
+          .joinGroup(payload.groupId, payload.inviteSecret);
       ref.read(activeGroupProvider.notifier).state = joined;
       if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to join group: $e';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _join() async {
+    final raw = _tokenController.text.trim();
+    if (raw.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final payload = PairingPayload.parse(raw);
+      if (payload is GroupInvitePayload) {
+        await _joinWithPayload(payload);
+      } else if (payload is PeerPairingPayload) {
+        await _handleScannedPayload(payload);
+      }
+    } catch (e) {
+      // Fallback: If it was a plain group ID / token
+      try {
+        final joined = await ref
+            .read(groupRepositoryProvider)
+            .joinGroup(raw, 'sec_token');
+        ref.read(activeGroupProvider.notifier).state = joined;
+        if (mounted) Navigator.pop(context);
+      } catch (fallbackError) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = e.toString().replaceAll('InvalidPairingPayloadException: ', '');
+          });
+        }
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -79,18 +163,43 @@ class _JoinGroupDialogState extends ConsumerState<JoinGroupDialog> {
               border: OutlineInputBorder(),
             ),
           ),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: TacticalColors.error.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: TacticalColors.error),
+              ),
+              child: Text(
+                _errorMessage!,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 11,
+                  color: TacticalColors.error,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           TacticalButton(
             label: 'SCAN QR CODE',
             icon: Icons.camera_alt_outlined,
             variant: TacticalButtonVariant.secondary,
             isFullWidth: true,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Camera QR scanner ready for Phase 5'),
+            onPressed: () async {
+              final payload = await Navigator.push<PairingPayload?>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const QrScannerScreen(
+                    title: 'SCAN INVITE / PEER QR',
+                  ),
                 ),
               );
+              if (payload != null && mounted) {
+                await _handleScannedPayload(payload);
+              }
             },
           ),
         ],

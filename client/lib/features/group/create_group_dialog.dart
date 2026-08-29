@@ -4,6 +4,7 @@ import '../../core/constants/tactical_colors.dart';
 import '../../core/utils/coordinate_formatter.dart';
 import '../../models/group.dart';
 import '../../widgets/tactical_button.dart';
+import '../../widgets/tactical_qr_widget.dart';
 
 class CreateGroupDialog extends StatelessWidget {
   final Group group;
@@ -43,18 +44,12 @@ class CreateGroupDialog extends StatelessWidget {
             'Share this invite token or QR code with trusted members.',
             style: TextStyle(fontSize: 12, color: TacticalColors.textSecondary),
           ),
-          const SizedBox(height: 20),
-          // QR Placeholder Box
-          Container(
-            width: 180,
-            height: 180,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Center(
-              child: Icon(Icons.qr_code_2, size: 160, color: Colors.black),
-            ),
+          const SizedBox(height: 16),
+          TacticalQrWidget(
+            data: inviteUri,
+            size: 160,
+            showCopyButton: false,
+            accentColor: TacticalColors.cyanActive,
           ),
           const SizedBox(height: 16),
           Container(
