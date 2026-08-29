@@ -19,5 +19,7 @@ ShadowTrace requires building two distinct signed APKs for every release:
 ## 3. Pre-Flight Checklist
 - [ ] `./scripts/validate.sh` passes with zero errors.
 - [ ] No debug mock endpoints enabled in release builds.
-- [ ] All RLS policies on Supabase are active and tested.
-- [ ] Android permissions in `AndroidManifest.xml` match requirements.
+- [ ] SQLite schema migrations and DataStore keys verified.
+- [ ] Direct peer UDP broadcast (Port 48550) enabled.
+- [ ] Android permissions in `AndroidManifest.xml` match requirements (Foreground Service, Location, Camera for QR scanning).
+
