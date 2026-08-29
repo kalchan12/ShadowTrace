@@ -6,7 +6,7 @@ This document is maintained as the single source of truth for the current develo
 
 ## Current State
 
-* **Current Phase:** **Phase 6 — Direct Realtime Location Telemetry (COMPLETED)** ➔ **Phase 7 — Security Hardening & Signing**
+* **Current Phase:** **Phase 7 — Security Hardening & Cryptographic Signing (COMPLETED)** ➔ **Phase 8 — Battery & Reliability**
 * **Architecture Model:** **100% Local-First / Zero-Cloud (Local SQLite & Jetpack DataStore)**
 * **Design System:** **Neon Protocol (Cyberpunk Tactical HUD)**
 * **Last Updated:** August 2026
@@ -24,8 +24,8 @@ This document is maintained as the single source of truth for the current develo
 | **Phase 4** | Local Database Foundation (SQLite / DataStore) | **COMPLETED** |
 | **Phase 5** | Device Pairing & Direct Key Exchange | **COMPLETED** |
 | **Phase 6** | Direct Realtime Location Telemetry | **COMPLETED** |
-| **Phase 7** | Security Hardening & Signing | **NEXT** |
-| **Phase 8** | Battery & Reliability | Planned |
+| **Phase 7** | Security Hardening & Signing | **COMPLETED** |
+| **Phase 8** | Battery & Reliability | **NEXT** |
 | **Phase 9** | UI Polish & Tactical Styling | Completed (Initial UI) |
 | **Phase 10**| Release Preparation | Planned |
 
@@ -63,16 +63,22 @@ This document is maintained as the single source of truth for the current develo
   - Wired telemetry dispatching and receiver lifecycle directly into [`ForegroundLocationService.kt`](file:///home/kal/ShadowTrace/service/app/src/main/kotlin/com/shadowtrace/service/service/ForegroundLocationService.kt).
   - Implemented Dart [`P2pTelemetryService`](file:///home/kal/ShadowTrace/client/lib/services/p2p_telemetry_service.dart) for local network socket listening, datagram ingestion, and broadcast dispatch.
   - Connected live telemetry ingest pipeline to [`SqliteLocationRepository`](file:///home/kal/ShadowTrace/client/lib/data/repositories/sqlite_location_repository.dart) and Riverpod providers in [`providers.dart`](file:///home/kal/ShadowTrace/client/lib/core/providers.dart).
+- [x] **Security Hardening & Cryptographic Signing (Phase 7):**
+  - Implemented ECDSA SHA256 digital signature generation and verification in [`KeystoreManager.kt`](file:///home/kal/ShadowTrace/service/app/src/main/kotlin/com/shadowtrace/service/identity/KeystoreManager.kt).
+  - Enforced digital signatures on all outgoing telemetry packets via [`DirectPeerDispatcher.kt`](file:///home/kal/ShadowTrace/service/app/src/main/kotlin/com/shadowtrace/service/network/DirectPeerDispatcher.kt).
+  - Implemented client-side [`CryptoVerifier.dart`](file:///home/kal/ShadowTrace/client/lib/core/crypto/crypto_verifier.dart) with clock skew defense, bounds checking, and canonical payload verification.
+  - Hardened [`SqliteLocationRepository.dart`](file:///home/kal/ShadowTrace/client/lib/data/repositories/sqlite_location_repository.dart) to reject tampered, out-of-bounds, or stale location packets.
 - [x] **Validation & Tests:**
   - `flutter analyze` passing with **0 issues**.
-  - `flutter test` passing all **29 tests** (SQLite, Models, Pairing Payloads, P2P Telemetry, IPC Bridge, UI Widgets).
+  - `flutter test` passing all **33 tests** (SQLite, Models, Pairing Payloads, P2P Telemetry, CryptoVerifier, IPC Bridge, UI Widgets).
   - `./gradlew test` passing on native Android Kotlin service (**50/50 tasks successful**).
 
 ---
 
 ## Next Recommended Steps
 
-1. **Advance Phase 7 (Security Hardening & Cryptographic Signing):**
-   - Enforce Keystore EC NIST P-256 digital signature generation on outgoing location packets (`sig`).
-   - Validate peer cryptographic signatures against local public keys in `local_peers` before accepting and caching coordinates.
+1. **Advance Phase 8 (Battery & Reliability Optimization):**
+   - Implement adaptive location polling based on movement activity detection (stationary throttle vs moving burst).
+   - Verify battery target (< 3.5% battery drain / hr).
+
 
