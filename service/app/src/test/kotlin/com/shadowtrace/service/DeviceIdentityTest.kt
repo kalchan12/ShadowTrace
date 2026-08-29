@@ -12,4 +12,17 @@ class DeviceIdentityTest {
         val hash = KeystoreManager.computeSha256Hex(input)
         assertEquals(64, hash.length)
     }
+
+    @Test
+    fun getCanonicalPayload_formatsDeterministicString() {
+        val canonical = KeystoreManager.getCanonicalPayload(
+            deviceId = "dev-101",
+            groupId = "grp-202",
+            latitude = 37.7749,
+            longitude = -122.4194,
+            accuracyM = 4.5,
+            timestamp = 1772184000000L
+        )
+        assertEquals("dev-101:grp-202:37.7749:-122.4194:4.5:1772184000000", canonical)
+    }
 }

@@ -10,9 +10,12 @@ import java.security.PublicKey
 import java.security.spec.ECGenParameterSpec
 import android.util.Base64
 
+import java.security.Signature
+
 object KeystoreManager {
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
     private const val KEY_ALIAS = "shadowtrace_device_identity_key"
+    private const val SIGNATURE_ALGORITHM = "SHA256withECDSA"
 
     fun getOrCreateIdentityKey(): KeyPair {
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
@@ -53,5 +56,38 @@ object KeystoreManager {
     fun computeSha256Hex(bytes: ByteArray): String {
         val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
         return digest.joinToString("") { "%02x".format(it) }
+    }
+
+    fun getCanonicalPayload(
+        deviceId: String,
+        groupId: String,
+        latitude: Double,
+        longitude: Double,
+        accuracyM: Double,
+        timestamp: Long
+    ): String {
+        return "$deviceId:$groupId:$latitude:$longitude:$accuracyM:$timestamp"
+    }
+
+    fun signData(data: ByteArray): String {
+        val privateKey = getOrCreateIdentityKey().private
+        val signature = Signature.getInstance(SIGNATURE_ALGORITHM).apply {
+            initSign(privateKey)
+            update(data)
+        }
+        return Base64.encodeToString(signature.sign(), Base64.NO_WRAP)
+    }
+
+    fun verifySignature(publicKey: PublicKey, data: ByteArray, signatureBase64: String): Boolean {
+        return try {
+            val sigBytes = Base64.decode(signatureBase64, Base64.NO_WRAP)
+            val signature = Signature.getInstance(SIGNATURE_ALGORITHM).apply {
+                initVerify(publicKey)
+                update(data)
+            }
+            signature.verify(sigBytes)
+        } catch (e: Exception) {
+            false
+        }
     }
 }

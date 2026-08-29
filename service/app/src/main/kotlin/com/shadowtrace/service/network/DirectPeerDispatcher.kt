@@ -71,6 +71,27 @@ class DirectPeerDispatcher {
             val timestamp = if (location.time > 0) location.time else System.currentTimeMillis()
             json.put("timestamp", timestamp)
 
+            val canonical = com.shadowtrace.service.identity.KeystoreManager.getCanonicalPayload(
+                deviceId = deviceId,
+                groupId = groupId,
+                latitude = location.latitude,
+                longitude = location.longitude,
+                accuracyM = location.accuracy.toDouble(),
+                timestamp = timestamp
+            )
+
+            val sig = try {
+                com.shadowtrace.service.identity.KeystoreManager.signData(canonical.toByteArray(Charsets.UTF_8))
+            } catch (_: Exception) {
+                null
+            }
+
+            if (sig != null) {
+                json.put("sig", sig)
+            } else {
+                json.put("sig", JSONObject.NULL)
+            }
+
             return json.toString()
         }
     }
