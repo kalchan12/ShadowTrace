@@ -41,5 +41,10 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- ShadowTrace Service APK: required for AIDL IPC binding on Android 11+ -->
+        <package android:name="com.shadowtrace.service" />
+        <intent>
+            <action android:name="com.shadowtrace.service.ACTION_BIND_IPC"/>
+        </intent>
     </queries>
 </manifest>

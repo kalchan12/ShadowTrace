@@ -43,6 +43,7 @@ class ServiceStatus {
     bool? isRunning,
     bool? isBroadcasting,
     String? activeGroupId,
+    bool clearActiveGroupId = false,
     int? lastUpdateTimestamp,
     bool? batteryOptimizationIgnored,
     String? locationPermissionStatus,
@@ -50,7 +51,9 @@ class ServiceStatus {
     return ServiceStatus(
       isRunning: isRunning ?? this.isRunning,
       isBroadcasting: isBroadcasting ?? this.isBroadcasting,
-      activeGroupId: activeGroupId ?? this.activeGroupId,
+      activeGroupId: clearActiveGroupId
+          ? null
+          : (activeGroupId ?? this.activeGroupId),
       lastUpdateTimestamp: lastUpdateTimestamp ?? this.lastUpdateTimestamp,
       batteryOptimizationIgnored:
           batteryOptimizationIgnored ?? this.batteryOptimizationIgnored,
