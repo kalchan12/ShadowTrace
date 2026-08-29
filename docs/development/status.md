@@ -6,7 +6,7 @@ This document is maintained as the single source of truth for the current develo
 
 ## Current State
 
-* **Current Phase:** **Phase 4 — Local Database Foundation (COMPLETED)** ➔ **Phase 5 — Device Pairing & Direct Key Exchange**
+* **Current Phase:** **Phase 5 — Device Pairing & Direct Key Exchange (COMPLETED)** ➔ **Phase 6 — Direct Realtime Location Telemetry**
 * **Architecture Model:** **100% Local-First / Zero-Cloud (Local SQLite & Jetpack DataStore)**
 * **Design System:** **Neon Protocol (Cyberpunk Tactical HUD)**
 * **Last Updated:** August 2026
@@ -22,8 +22,8 @@ This document is maintained as the single source of truth for the current develo
 | **Phase 2** | Service Foundation (Native Kotlin) | **COMPLETED** |
 | **Phase 3** | Client ↔ Service IPC Bridge | **COMPLETED** |
 | **Phase 4** | Local Database Foundation (SQLite / DataStore) | **COMPLETED** |
-| **Phase 5** | Device Pairing & Direct Key Exchange | **NEXT** |
-| **Phase 6** | Direct Realtime Location Telemetry | Planned |
+| **Phase 5** | Device Pairing & Direct Key Exchange | **COMPLETED** |
+| **Phase 6** | Direct Realtime Location Telemetry | **NEXT** |
 | **Phase 7** | Security Hardening & Signing | Planned |
 | **Phase 8** | Battery & Reliability | Planned |
 | **Phase 9** | UI Polish & Tactical Styling | Completed (Initial UI) |
@@ -52,17 +52,21 @@ This document is maintained as the single source of truth for the current develo
   - Implemented `AppDatabase` on-device SQLite helper (`local_groups`, `local_peers`, `cached_peer_locations`).
   - Implemented concrete SQLite repositories: `SqliteGroupRepository`, `SqliteFriendRepository`, and `SqliteLocationRepository`.
   - Wired Riverpod state providers to live SQLite database and IPC bridge.
+- [x] **Device Pairing & Direct Key Exchange (Phase 5):**
+  - Created [`PairingPayload`](file:///home/kal/ShadowTrace/client/lib/models/pairing_payload.dart) parser and data models for `GroupInvitePayload` and `PeerPairingPayload` per Protocol v1.0.
+  - Created tactical HUD [`TacticalQrWidget`](file:///home/kal/ShadowTrace/client/lib/widgets/tactical_qr_widget.dart) using `qr_flutter` with cyber corner brackets and clipboard integration.
+  - Built camera [`QrScannerScreen`](file:///home/kal/ShadowTrace/client/lib/features/pairing/qr_scanner_screen.dart) with `mobile_scanner`, tactical laser scanning animation, torch control, and manual input fallback.
+  - Integrated dynamic QR generation and scanning across [`CreateGroupDialog`](file:///home/kal/ShadowTrace/client/lib/features/group/create_group_dialog.dart), [`CreateGroupScreen`](file:///home/kal/ShadowTrace/client/lib/features/group/create_group_screen.dart), [`JoinGroupDialog`](file:///home/kal/ShadowTrace/client/lib/features/group/join_group_dialog.dart), and [`JoinGroupScreen`](file:///home/kal/ShadowTrace/client/lib/features/group/join_group_screen.dart).
 - [x] **Validation & Tests:**
   - `flutter analyze` passing with **0 issues**.
-  - `flutter test` passing all **21 tests** (SQLite, Models, IPC Bridge, UI Widgets).
+  - `flutter test` passing all **26 tests** (SQLite, Models, Pairing Payloads, IPC Bridge, UI Widgets).
   - `./gradlew test` passing on native Android Kotlin service (**50/50 tasks successful**).
 
 ---
 
 ## Next Recommended Steps
 
-1. **Advance Phase 5 (Device Pairing & Direct Key Exchange):**
-   - Connect camera QR scanner (`mobile_scanner`) to parse tactical invite payloads containing group ID, invite secret, and public keys.
-   - Implement direct QR code generation and scan-to-pair flow storing peer cryptographic identities in `local_peers`.
-2. **Advance Phase 6 (Direct Realtime Location Telemetry):**
+1. **Advance Phase 6 (Direct Realtime Location Telemetry):**
    - Implement P2P socket / local WiFi telemetry dispatcher (`DirectPeerDispatcher.kt`).
+   - Wire live incoming location packets to SQLite `cached_peer_locations` and Riverpod streams.
+
