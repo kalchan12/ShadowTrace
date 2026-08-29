@@ -6,7 +6,15 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.ServiceCompat
+import com.shadowtrace.service.identity.KeystoreManager
 import com.shadowtrace.service.location.FusedLocationEngine
+import com.shadowtrace.service.network.DirectPeerDispatcher
+import com.shadowtrace.service.network.DirectPeerReceiver
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 class ForegroundLocationService : Service() {
 
@@ -15,14 +23,28 @@ class ForegroundLocationService : Service() {
         const val EXTRA_GROUP_ID = "com.shadowtrace.service.EXTRA_GROUP_ID"
     }
 
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private lateinit var locationEngine: FusedLocationEngine
+    private val peerDispatcher = DirectPeerDispatcher()
+    private val peerReceiver = DirectPeerReceiver()
 
     override fun onCreate() {
         super.onCreate()
         locationEngine = FusedLocationEngine(this) { location ->
             ServiceStateHolder.updateLocation(location)
-            // Telemetry publication hook (Phase 6)
+            val activeGid = ServiceStateHolder.activeGroupId.value
+            if (activeGid != null && ServiceStateHolder.isBroadcasting.value) {
+                serviceScope.launch {
+                    val deviceId = KeystoreManager.getDeviceId()
+                    peerDispatcher.dispatchLocation(
+                        deviceId = deviceId,
+                        groupId = activeGid,
+                        location = location
+                    )
+                }
+            }
         }
+        peerReceiver.startListening(serviceScope)
         ServiceStateHolder.updateServiceRunning(true)
     }
 
@@ -69,6 +91,8 @@ class ForegroundLocationService : Service() {
 
     override fun onDestroy() {
         locationEngine.stopUpdates()
+        peerReceiver.stopListening()
+        serviceScope.cancel()
         ServiceStateHolder.updateServiceRunning(false)
         ServiceStateHolder.setBroadcasting(false)
         super.onDestroy()
