@@ -10,6 +10,7 @@ class LocationUpdate {
   final int? batteryPct;
   final bool? isCharging;
   final int timestamp;
+  final String? signature;
 
   const LocationUpdate({
     required this.deviceId,
@@ -23,7 +24,11 @@ class LocationUpdate {
     this.batteryPct,
     this.isCharging,
     required this.timestamp,
+    this.signature,
   });
+
+  String get canonicalPayload =>
+      '$deviceId:$groupId:$latitude:$longitude:$accuracyM:$timestamp';
 
   factory LocationUpdate.fromJson(Map<String, dynamic> json) {
     return LocationUpdate(
@@ -38,6 +43,7 @@ class LocationUpdate {
       batteryPct: json['battery_pct'] as int?,
       isCharging: json['is_charging'] as bool?,
       timestamp: json['timestamp'] as int,
+      signature: json['sig'] as String?,
     );
   }
 
@@ -48,12 +54,13 @@ class LocationUpdate {
       'latitude': latitude,
       'longitude': longitude,
       'accuracy_m': accuracyM,
-      'altitude_m': altitudeM,
-      'speed_mps': speedMps,
-      'bearing_deg': bearingDeg,
-      'battery_pct': batteryPct,
-      'is_charging': isCharging,
+      if (altitudeM != null) 'altitude_m': altitudeM,
+      if (speedMps != null) 'speed_mps': speedMps,
+      if (bearingDeg != null) 'bearing_deg': bearingDeg,
+      if (batteryPct != null) 'battery_pct': batteryPct,
+      if (isCharging != null) 'is_charging': isCharging,
       'timestamp': timestamp,
+      if (signature != null) 'sig': signature,
     };
   }
 }

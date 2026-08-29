@@ -89,7 +89,7 @@ void main() {
         longitude: -122.4060,
         accuracyM: 4.2,
         batteryPct: 77,
-        timestamp: 1700000100000,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
       );
 
       // Listen on stream

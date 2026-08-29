@@ -2,6 +2,7 @@ import 'dart:async';
 import '../local/app_database.dart';
 import '../../models/location_update.dart';
 import '../../services/service_bridge/service_bridge.dart';
+import '../../core/crypto/crypto_verifier.dart';
 import 'location_repository.dart';
 
 class SqliteLocationRepository implements LocationRepository {
@@ -34,9 +35,14 @@ class SqliteLocationRepository implements LocationRepository {
     return _serviceBridge.stopBroadcasting();
   }
 
-  /// Ingest an incoming peer location packet: persists snapshot to SQLite and emits to stream
+  /// Ingest an incoming peer location packet: verifies authenticity, persists snapshot to SQLite and emits to stream
   @override
   Future<void> ingestLocationUpdate(LocationUpdate update) async {
+    final isValid = CryptoVerifier.verifyPacketAuthenticity(update: update);
+    if (!isValid) {
+      // Reject tampered or corrupted coordinates
+      return;
+    }
     await _database.upsertPeerLocation(update);
     _locationsController.add(update);
   }
