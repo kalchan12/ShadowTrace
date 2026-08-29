@@ -6,7 +6,7 @@ This document is maintained as the single source of truth for the current develo
 
 ## Current State
 
-* **Current Phase:** **Phase 7 — Security Hardening & Cryptographic Signing (COMPLETED)** ➔ **Phase 8 — Battery & Reliability**
+* **Current Phase:** **Phase 8 — Battery & Reliability (COMPLETED)** ➔ **Phase 9 — UI Polish & Final Release Readiness**
 * **Architecture Model:** **100% Local-First / Zero-Cloud (Local SQLite & Jetpack DataStore)**
 * **Design System:** **Neon Protocol (Cyberpunk Tactical HUD)**
 * **Last Updated:** August 2026
@@ -25,9 +25,9 @@ This document is maintained as the single source of truth for the current develo
 | **Phase 5** | Device Pairing & Direct Key Exchange | **COMPLETED** |
 | **Phase 6** | Direct Realtime Location Telemetry | **COMPLETED** |
 | **Phase 7** | Security Hardening & Signing | **COMPLETED** |
-| **Phase 8** | Battery & Reliability | **NEXT** |
+| **Phase 8** | Battery & Reliability | **COMPLETED** |
 | **Phase 9** | UI Polish & Tactical Styling | Completed (Initial UI) |
-| **Phase 10**| Release Preparation | Planned |
+| **Phase 10**| Release Preparation | **NEXT** |
 
 ---
 
@@ -68,6 +68,10 @@ This document is maintained as the single source of truth for the current develo
   - Enforced digital signatures on all outgoing telemetry packets via [`DirectPeerDispatcher.kt`](file:///home/kal/ShadowTrace/service/app/src/main/kotlin/com/shadowtrace/service/network/DirectPeerDispatcher.kt).
   - Implemented client-side [`CryptoVerifier.dart`](file:///home/kal/ShadowTrace/client/lib/core/crypto/crypto_verifier.dart) with clock skew defense, bounds checking, and canonical payload verification.
   - Hardened [`SqliteLocationRepository.dart`](file:///home/kal/ShadowTrace/client/lib/data/repositories/sqlite_location_repository.dart) to reject tampered, out-of-bounds, or stale location packets.
+- [x] **Battery & Reliability Optimization (Phase 8):**
+  - Implemented adaptive GPS polling in [`FusedLocationEngine.kt`](file:///home/kal/ShadowTrace/service/app/src/main/kotlin/com/shadowtrace/service/location/FusedLocationEngine.kt) (30s interval / 20m displacement when stationary vs 5s / 5m when moving).
+  - Built stationary activity and speed detection in [`LocationFilter.kt`](file:///home/kal/ShadowTrace/service/app/src/main/kotlin/com/shadowtrace/service/location/LocationFilter.kt).
+  - Added unit test suite in [`LocationFilterTest.kt`](file:///home/kal/ShadowTrace/service/app/src/test/kotlin/com/shadowtrace/service/LocationFilterTest.kt).
 - [x] **Validation & Tests:**
   - `flutter analyze` passing with **0 issues**.
   - `flutter test` passing all **33 tests** (SQLite, Models, Pairing Payloads, P2P Telemetry, CryptoVerifier, IPC Bridge, UI Widgets).
@@ -77,8 +81,8 @@ This document is maintained as the single source of truth for the current develo
 
 ## Next Recommended Steps
 
-1. **Advance Phase 8 (Battery & Reliability Optimization):**
-   - Implement adaptive location polling based on movement activity detection (stationary throttle vs moving burst).
-   - Verify battery target (< 3.5% battery drain / hr).
+1. **Advance Phase 10 (Release Preparation & Packaging):**
+   - Verify final release builds of Client APK and Service APK.
+   - Validate end-to-end APK separation and manifest permissions.
 
 
