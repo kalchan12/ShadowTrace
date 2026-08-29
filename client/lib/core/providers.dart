@@ -10,6 +10,7 @@ import '../data/mock/mock_location_repository.dart';
 import '../data/mock/mock_friend_repository.dart';
 import '../data/mock/mock_group_repository.dart';
 import '../services/service_bridge/service_bridge.dart';
+import '../services/p2p_telemetry_service.dart';
 import '../models/group.dart';
 import '../models/friend.dart';
 import '../models/location_update.dart';
@@ -22,6 +23,14 @@ final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
 
 final serviceBridgeProvider = Provider<ServiceBridge>((ref) {
   return ServiceBridge();
+});
+
+final p2pTelemetryServiceProvider = Provider<P2pTelemetryService>((ref) {
+  final locRepo = ref.watch(locationRepositoryProvider);
+  final service = P2pTelemetryService(locRepo);
+  service.startListening();
+  ref.onDispose(() => service.dispose());
+  return service;
 });
 
 // Repository Providers

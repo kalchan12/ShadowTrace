@@ -35,6 +35,7 @@ class SqliteLocationRepository implements LocationRepository {
   }
 
   /// Ingest an incoming peer location packet: persists snapshot to SQLite and emits to stream
+  @override
   Future<void> ingestLocationUpdate(LocationUpdate update) async {
     await _database.upsertPeerLocation(update);
     _locationsController.add(update);

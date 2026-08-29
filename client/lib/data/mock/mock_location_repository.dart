@@ -76,6 +76,11 @@ class MockLocationRepository implements LocationRepository {
     return true;
   }
 
+  @override
+  Future<void> ingestLocationUpdate(LocationUpdate update) async {
+    _controller.add(update);
+  }
+
   bool get isBroadcasting => _isBroadcasting;
 
   void dispose() {

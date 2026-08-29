@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers.dart';
 import '../../widgets/tactical_bottom_nav.dart';
 import '../map/live_map_screen.dart';
 import '../squad/squad_screen.dart';
@@ -13,6 +14,8 @@ class MainShellScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Eagerly initialize local network P2P listener
+    ref.watch(p2pTelemetryServiceProvider);
     final currentIndex = ref.watch(selectedTabProvider);
 
     final List<Widget> screens = const [

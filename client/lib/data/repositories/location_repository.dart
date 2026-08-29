@@ -12,4 +12,7 @@ abstract class LocationRepository {
 
   /// Stop broadcasting location.
   Future<bool> stopBroadcasting();
+
+  /// Ingest an incoming location update packet from P2P network.
+  Future<void> ingestLocationUpdate(LocationUpdate update);
 }
